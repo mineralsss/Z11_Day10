@@ -25,8 +25,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from monitoring.freshness_check import check_manifest_freshness
+from monitoring.freshness_check import check_manifest_freshness, check_timestamp_freshness
 from quality.expectations import run_expectations
+from quality.pydantic_validate import validate_cleaned_rows
 from transform.cleaning_rules import clean_rows, load_raw_csv, write_cleaned_csv, write_quarantine_csv
 
 load_dotenv()
@@ -66,10 +67,27 @@ def cmd_run(args: argparse.Namespace) -> int:
     log(f"run_id={run_id}")
     log(f"raw_records={raw_count}")
 
+    raw_latest_exported = ""
+    if rows:
+        raw_latest_exported = max((r.get("exported_at") or "" for r in rows), default="")
+
     cleaned, quarantine = clean_rows(
         rows,
         apply_refund_window_fix=not args.no_refund_fix,
     )
+
+    cleaned, pyd_errors = validate_cleaned_rows(cleaned)
+    if pyd_errors:
+        log(f"pydantic_validate FAIL invalid_rows={len(pyd_errors)}")
+        for e in pyd_errors[:10]:
+            log(f"pydantic_error {e}")
+        if not args.skip_validate:
+            log("PIPELINE_HALT: pydantic schema validation failed.")
+            return 2
+        log("WARN: pydantic validation failed but --skip-validate -> tiếp tục (chỉ dùng cho demo).")
+    else:
+        log(f"pydantic_validate OK rows={len(cleaned)}")
+
     cleaned_path = CLEAN_DIR / f"cleaned_{run_id.replace(':', '-')}.csv"
     quar_path = QUAR_DIR / f"quarantine_{run_id.replace(':', '-')}.csv"
     write_cleaned_csv(cleaned_path, cleaned)
@@ -110,6 +128,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         "raw_records": raw_count,
         "cleaned_records": len(cleaned),
         "quarantine_records": len(quarantine),
+        "ingest_latest_exported_at": raw_latest_exported,
+        "publish_latest_exported_at": latest_exported,
         "latest_exported_at": latest_exported,
         "no_refund_fix": bool(args.no_refund_fix),
         "skipped_validate": bool(args.skip_validate and halt),
@@ -121,7 +141,22 @@ def cmd_run(args: argparse.Namespace) -> int:
     man_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     log(f"manifest_written={man_path.relative_to(ROOT)}")
 
-    status, fdetail = check_manifest_freshness(man_path, sla_hours=float(os.environ.get("FRESHNESS_SLA_HOURS", "24")))
+    sla = float(os.environ.get("FRESHNESS_SLA_HOURS", "24"))
+    ingest_status, ingest_detail = check_timestamp_freshness(
+        raw_latest_exported,
+        sla_hours=sla,
+        boundary="ingest",
+    )
+    publish_status, publish_detail = check_timestamp_freshness(
+        latest_exported,
+        sla_hours=sla,
+        boundary="publish",
+    )
+    log(f"freshness_ingest={ingest_status} {json.dumps(ingest_detail, ensure_ascii=False)}")
+    log(f"freshness_publish={publish_status} {json.dumps(publish_detail, ensure_ascii=False)}")
+
+    # Backward compatibility cho các script/check cũ.
+    status, fdetail = check_manifest_freshness(man_path, sla_hours=sla)
     log(f"freshness_check={status} {json.dumps(fdetail, ensure_ascii=False)}")
 
     log("PIPELINE_OK")

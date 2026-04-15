@@ -1,0 +1,10 @@
+chunk_id,doc_id,chunk_text,effective_date,exported_at
+policy_refund_v4_1_3b11f30cc4b49d25,policy_refund_v4,Yêu cầu được gửi trong vòng 7 ngày làm việc kể từ thời điểm xác nhận đơn hàng.,2026-02-01,2026-04-10T08:00:00+00:00
+sla_p1_2026_2_e92d70e835ec2a71,sla_p1_2026,Ticket P1 có SLA phản hồi ban đầu 15 phút và resolution trong 4 giờ.,2026-02-01,2026-04-10T08:00:00+00:00
+it_helpdesk_faq_3_c5b9454f39aaeb90,it_helpdesk_faq,Tài khoản bị khóa sau 5 lần đăng nhập sai liên tiếp.,2026-02-01,2026-04-10T08:00:00+00:00
+hr_leave_policy_4_31581e00a638ac0d,hr_leave_policy,Nhân viên dưới 3 năm kinh nghiệm được 12 ngày phép năm theo chính sách 2026.,2026-02-01,2026-04-10T08:00:00+00:00
+it_helpdesk_faq_5_74bc2a3cec7e24e0,it_helpdesk_faq,FAQ bổ sung: đổi mật khẩu qua portal self-service có thể mất tối đa 24 giờ để đồng bộ toàn hệ thống.,2026-02-01,2026-04-10T08:00:00+00:00
+policy_refund_v4_6_5b3858652809170a,policy_refund_v4,Khách hàng cần cung cấp mã đơn hàng hợp lệ khi gửi yêu cầu hoàn tiền.,2026-02-01,2026-04-10T08:00:00+00:00
+sla_p1_2026_7_e3bf20e91e5a30c7,sla_p1_2026,Escalation cho ticket P1 phải được thực hiện nếu chưa có phản hồi sau 15 phút.,2026-02-01,2026-04-10T08:00:00+00:00
+it_helpdesk_faq_8_bd754f26d3345830,it_helpdesk_faq,"Nếu mất quyền truy cập VPN, người dùng cần mở ticket với mức độ ưu tiên phù hợp.",2026-02-01,2026-04-10T08:00:00+00:00
+hr_leave_policy_9_8ecdd2c108b324d7,hr_leave_policy,"Nhân viên cần gửi đơn nghỉ phép trước ít nhất 3 ngày làm việc, trừ trường hợp khẩn cấp.",2026-02-01,2026-04-10T08:00:00+00:00

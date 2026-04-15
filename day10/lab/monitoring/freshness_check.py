@@ -44,12 +44,37 @@ def check_manifest_freshness(
 
     data: Dict[str, Any] = json.loads(manifest_path.read_text(encoding="utf-8"))
     ts_raw = data.get("latest_exported_at") or data.get("run_timestamp")
+    return check_timestamp_freshness(
+        ts_raw,
+        sla_hours=sla_hours,
+        now=now,
+        boundary="publish",
+    )
+
+
+def check_timestamp_freshness(
+    ts_raw: str | None,
+    *,
+    sla_hours: float = 24.0,
+    now: datetime | None = None,
+    boundary: str = "publish",
+) -> Tuple[str, Dict[str, Any]]:
+    """
+    Kiểm freshness cho một timestamp cụ thể theo boundary (ingest/publish).
+    """
+    now = now or datetime.now(timezone.utc)
     dt = parse_iso(str(ts_raw)) if ts_raw else None
     if dt is None:
-        return "WARN", {"reason": "no_timestamp_in_manifest", "manifest": data}
+        return "WARN", {
+            "boundary": boundary,
+            "reason": "no_timestamp",
+            "latest_exported_at": ts_raw,
+            "sla_hours": sla_hours,
+        }
 
     age_hours = (now - dt).total_seconds() / 3600.0
     detail = {
+        "boundary": boundary,
         "latest_exported_at": ts_raw,
         "age_hours": round(age_hours, 3),
         "sla_hours": sla_hours,

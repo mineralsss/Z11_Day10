@@ -9,3 +9,8 @@ chunk_id,doc_id,chunk_text,effective_date,exported_at
 8,hr_leave_policy,"Nhân viên dưới 3 năm kinh nghiệm được 12 ngày phép năm theo chính sách 2026.",2026-02-01,2026-04-10T08:00:00
 9,legacy_catalog_xyz_zzz,"Chunk nội dung đủ dài để vượt ngưỡng expectation độ dài tối thiểu trong cleaned export.",2026-02-01,2026-04-10T08:00:00
 10,it_helpdesk_faq,"FAQ bổ sung: đổi mật khẩu qua portal self-service có thể mất tối đa 24 giờ để đồng bộ toàn hệ thống.",01/02/2026,2026-04-10T08:00:00
+11,policy_refund_v4,"Khách hàng cần cung cấp mã đơn hàng hợp lệ khi gửi yêu cầu hoàn tiền.",2026-02-01,2026-04-10T08:00:00
+12,sla_p1_2026,"Escalation cho ticket P1 phải được thực hiện nếu chưa có phản hồi sau 15 phút.",2026-02-01,2026-04-10T08:00:00
+13,it_helpdesk_faq,"Nếu mất quyền truy cập VPN, người dùng cần mở ticket với mức độ ưu tiên phù hợp.",2026-02-01,2026-04-10T08:00:00
+14,hr_leave_policy,"Nhân viên cần gửi đơn nghỉ phép trước ít nhất 3 ngày làm việc, trừ trường hợp khẩn cấp.",2026-02-01,2026-04-10T08:00:00
+15,legacy_catalog_xyz_zzz,"Bản ghi legacy phát sinh từ hệ cũ chưa được mapping vào allowlist chính thức.",2026-02-01,2026-04-10T08:00:00

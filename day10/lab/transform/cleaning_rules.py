@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -25,10 +26,17 @@ ALLOWED_DOC_IDS = frozenset(
 
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _DMY_SLASH = re.compile(r"^(\d{2})/(\d{2})/(\d{4})$")
+_CTRL_CHARS = re.compile(r"[\u200b\ufeff]")
 
 
 def _norm_text(s: str) -> str:
     return " ".join((s or "").strip().split()).lower()
+
+
+def _sanitize_text(s: str) -> str:
+    # Chuẩn hóa BOM/zero-width và whitespace để giảm nhiễu trước dedupe.
+    x = _CTRL_CHARS.sub("", s or "")
+    return " ".join(x.strip().split())
 
 
 def _stable_chunk_id(doc_id: str, chunk_text: str, seq: int) -> str:
@@ -51,6 +59,25 @@ def _normalize_effective_date(raw: str) -> Tuple[str, str]:
         dd, mm, yyyy = m.group(1), m.group(2), m.group(3)
         return f"{yyyy}-{mm}-{dd}", ""
     return "", "invalid_effective_date_format"
+
+
+def _normalize_exported_at(raw: str) -> Tuple[str, str]:
+    """
+    Trả về (iso_datetime, error_reason).
+    """
+    s = (raw or "").strip()
+    if not s:
+        return "", "missing_exported_at"
+    try:
+        if s.endswith("Z"):
+            dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        else:
+            dt = datetime.fromisoformat(s)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+        return dt.replace(microsecond=0).isoformat(), ""
+    except ValueError:
+        return "", "invalid_exported_at_format"
 
 
 def load_raw_csv(path: Path) -> List[Dict[str, str]]:
@@ -77,6 +104,11 @@ def clean_rows(
     4) Quarantine: chunk_text rỗng hoặc effective_date rỗng sau chuẩn hoá.
     5) Loại trùng nội dung chunk_text (giữ bản đầu).
     6) Fix stale refund: policy_refund_v4 chứa '14 ngày làm việc' → 7 ngày.
+    7) Chuẩn hóa text: bỏ BOM/zero-width + collapse whitespace, quarantine nếu rỗng sau sanitize.
+    8) Chuẩn hóa exported_at sang ISO datetime timezone-aware; quarantine nếu thiếu/sai format.
+    9) Quarantine chunk quá dài bất thường (>1200 ký tự) để tránh context pollution.
+    10) Khi tắt refund fix (inject demo), quarantine refund chunk còn mang dấu vết migration cũ
+        như 'policy-v3' hoặc 'lỗi migration' để tránh stale context lọt vào cleaned snapshot.
     """
     quarantine: List[Dict[str, Any]] = []
     seen_text: set[str] = set()
@@ -111,8 +143,18 @@ def clean_rows(
             )
             continue
 
+        text = _sanitize_text(text)
         if not text:
-            quarantine.append({**raw, "reason": "missing_chunk_text"})
+            quarantine.append({**raw, "reason": "empty_after_text_sanitize"})
+            continue
+
+        exp_norm, exp_err = _normalize_exported_at(exported_at)
+        if exp_err:
+            quarantine.append({**raw, "reason": exp_err, "exported_at_raw": exported_at})
+            continue
+
+        if len(text) > 1200:
+            quarantine.append({**raw, "reason": "chunk_text_too_long", "chunk_len": len(text)})
             continue
 
         key = _norm_text(text)
@@ -130,6 +172,14 @@ def clean_rows(
                 )
                 fixed_text += " [cleaned: stale_refund_window]"
 
+        if (
+            doc_id == "policy_refund_v4"
+            and not apply_refund_window_fix
+            and ("policy-v3" in _norm_text(text) or "lỗi migration" in _norm_text(text))
+        ):
+            quarantine.append({**raw, "reason": "stale_refund_migration_note"})
+            continue
+
         seq += 1
         cleaned.append(
             {
@@ -137,7 +187,7 @@ def clean_rows(
                 "doc_id": doc_id,
                 "chunk_text": fixed_text,
                 "effective_date": eff_norm,
-                "exported_at": exported_at or "",
+                "exported_at": exp_norm,
             }
         )
 
