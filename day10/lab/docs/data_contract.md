@@ -23,7 +23,7 @@
 | doc_id | string | Có | Khóa logic nguồn; phải thuộc allowlist: `policy_refund_v4`, `sla_p1_2026`, `it_helpdesk_faq`, `hr_leave_policy` |
 | chunk_text | string | Có | Nội dung chunk đã chuẩn hóa; ràng buộc độ dài tối thiểu `8` ký tự |
 | effective_date | date | Có | Ngày hiệu lực chuẩn ISO; dùng để loại bản policy cũ và truy vết version |
-| exported_at | datetime | Có | Timestamp export phục vụ freshness check tại boundary `publish` |
+| exported_at | datetime | Có | Timestamp export phục vụ freshness check ở boundary `ingest` và `publish` |
 
 Quy ước schema fail:
 - Thiếu trường bắt buộc hoặc parse ngày thất bại: đưa vào quarantine.
@@ -55,7 +55,7 @@ Nguồn canonical theo contract:
 
 Nguyên tắc versioning:
 - Chính sách HR áp cutoff tối thiểu: `effective_date >= 2026-01-01`.
-- Freshness đo tại boundary `publish`, SLA `24h`.
+- Freshness SLA `24h` ưu tiên tại boundary `publish`, đồng thời theo dõi thêm boundary `ingest` để quan sát lệch giữa nguồn và snapshot publish.
 - Kênh cảnh báo: `teams://z11-day10-data-alerts`.
 
 Quy tắc thay đổi nguồn canonical:

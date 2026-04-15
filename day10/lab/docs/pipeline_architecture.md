@@ -11,7 +11,8 @@
 flowchart LR
 		A[data/raw/policy_export_dirty.csv] --> B[Ingest load_raw_csv]
 		B --> C[Transform clean_rows]
-		C --> D[cleaned_<run_id>.csv]
+		C --> P[Pydantic schema gate]
+		P --> D[cleaned_<run_id>.csv]
 		C --> E[quarantine_<run_id>.csv]
 		D --> F[Quality run_expectations]
 		F -->|pass| G[Embed Chroma upsert by chunk_id]
@@ -19,12 +20,12 @@ flowchart LR
 		G --> I[Collection day10_kb]
 		I --> J[Serving retrieval Day 08/09]
 		D --> K[manifest_<run_id>.json]
-		K --> L[Freshness check publish boundary]
+		K --> L[Freshness check ingest + publish boundaries]
 ```
 
 Điểm đo chính:
 - `run_id` được ghi ngay từ đầu run, xuất hiện trong log, tên file artifact và metadata embed.
-- Freshness đo tại boundary `publish` qua manifest (`latest_exported_at` so với SLA giờ).
+- Freshness đo ở 2 boundary qua manifest: `ingest_latest_exported_at` và `publish_latest_exported_at`.
 - Record lỗi được tách riêng vào `artifacts/quarantine/quarantine_<run_id>.csv`.
 
 ---
@@ -35,7 +36,7 @@ flowchart LR
 |------------|-------|--------|--------------|
 | Ingest | `data/raw/policy_export_dirty.csv` (hoặc raw tùy chọn) | Danh sách row + log `raw_records` | Ingestion Owner |
 | Transform | Raw rows | `cleaned_<run_id>.csv`, `quarantine_<run_id>.csv` | Cleaning / Quality Owner |
-| Quality | Cleaned rows | Kết quả expectation `warn/halt`, quyết định publish | Cleaning / Quality Owner |
+| Quality | Cleaned rows | Kết quả Pydantic + expectation `warn/halt`, quyết định publish | Cleaning / Quality Owner |
 | Embed | Cleaned CSV đã pass gate (hoặc inject có chủ đích) | Upsert vào Chroma collection `day10_kb`, prune id cũ | Embed Owner |
 | Monitor | `manifest_<run_id>.json`, env SLA | Trạng thái PASS/WARN/FAIL freshness + cảnh báo | Monitoring / Docs Owner |
 

@@ -53,9 +53,9 @@ Bằng chứng run chuẩn gần nhất:
 - Lệnh: `python etl_pipeline.py run`
 - Schema gate: `pydantic_validate OK rows=10`
 - Kết quả: `PIPELINE_OK` và **exit code 0**.
-- Run id: `2026-04-15T09-36Z`.
+- Run id: `2026-04-15T09-52Z`.
 - Kết quả chính: `cleaned_records=10`, `quarantine_records=5`.
-- Lưu ý: freshness vẫn FAIL vì `latest_exported_at=2026-04-10T08:00:00+00:00` vượt SLA 24h.
+- Lưu ý: freshness vẫn FAIL ở cả ingest và publish vì `latest_exported_at=2026-04-10T08:00:00(+00:00)` vượt SLA 24h.
 
 Ghi chú (freshness trên data mẫu):
 - `freshness_check=FAIL` với CSV mẫu là hợp lý vì `exported_at` cố ý cũ.
